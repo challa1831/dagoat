@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Quiz Master</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  /* ============================================
+     PALETTE — only the 5 requested colors:
+     slate, sky blue, light green, dark blue, black
+     ============================================ */
+  :root {
+    --black:       #0a0a0a;
+    --dark-blue:   #0f172a;     /* deepest navy/black-blue */
+    --dark-blue-2: #1e3a8a;     /* richer dark blue accent */
+    --slate-900:   #111827;
+    --slate-800:   #1e293b;     /* panel bg */
+    --slate-700:   #334155;     /* panel borders */
+    --slate-600:   #475569;     /* slate accent */
+    --slate-400:   #94a3b8;     /* dim ink */
+    --slate-100:   #f1f5f9;     /* main ink */
+    --sky:         #38bdf8;     /* sky blue */
+    --sky-200:     #bae6fd;
+    --sky-500:     #0ea5e9;
+    --green:       #86efac;     /* light green */
+    --green-300:   #6ee7b7;
+    --green-500:   #22c55e;
+    --shadow:      0 12px 38px rgba(0,0,0,.55);
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background:
+      radial-gradient(ellipse at top, var(--dark-blue) 0%, var(--black) 70%);
+    color: var(--slate-100);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-weight: 400;
+    min-height: 100vh;
+    overflow-x: hidden;
+    letter-spacing: -0.01em;
+  }
+  body::before {
+    content: "";
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(circle at 12% 18%, rgba(56,189,248,.08), transparent 28%),
+      radial-gradient(circle at 88% 80%, rgba(134,239,172,.06), transparent 28%);
+    pointer-events: none; z-index: 0;
+  }
+  .app {
+    position: relative; z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 32px 22px 80px;
+  }
+
+  /* HEADER */
+  .header { text-align: center; padding: 6px 0 16px; }
+  .title {
+    font-family: 'Inter', sans-serif;
+    font-weight: 900;
+    font-size: clamp(40px, 7vw, 76px);
+    letter-spacing: -0.04em;
+    margin: 0;
+    line-height: 1;
+    color: var(--slate-100);
+  }
+  .title .accent { color: var(--sky); }
+  .subtitle {
+    margin-top: 10px;
+    font-weight: 500;
+    font-size: clamp(13px, 1.6vw, 16px);
+    color: var(--slate-400);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+
+  /* HOME GRID — 5 cards, auto-fit */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 18px;
+    margin: 30px 0 18px;
+  }
+  .pick {
+    position: relative;
+    border-radius: 18px;
+    padding: 22px 20px;
+    background: linear-gradient(180deg, var(--slate-800) 0%, var(--slate-900) 100%);
+    border: 1px solid var(--slate-700);
+    box-shadow: var(--shadow);
+    transition: transform .15s ease, border-color .15s ease;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .pick:hover { transform: translateY(-4px); border-color: var(--sky); }
+  .pick .badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--slate-100);
+    background: rgba(255,255,255,.06);
+    border: 1px solid var(--slate-700);
+  }
+  .pick h2 {
+    font-weight: 900;
+    font-size: 32px;
+    letter-spacing: -0.03em;
+    margin: 12px 0 6px;
+    line-height: 1;
+  }
+  .pick p {
+    color: var(--slate-400);
+    font-size: 13.5px;
+    line-height: 1.45;
+    margin: 0 0 14px;
+  }
+  /* Accent color per topic — using only the allowed palette */
+  .pick.ninjago h2 { color: var(--green); }
+  .pick.marvel   h2 { color: var(--sky); }
+  .pick.mario    h2 { color: var(--sky-200); }
+  .pick.sonic    h2 { color: var(--green-300); }
+  .pick.beyblade h2 { color: var(--sky); }
+  .pick.ninjago  { border-left: 4px solid var(--green); }
+  .pick.marvel   { border-left: 4px solid var(--sky); }
+  .pick.mario    { border-left: 4px solid var(--dark-blue-2); }
+  .pick.sonic    { border-left: 4px solid var(--green-500); }
+  .pick.beyblade { border-left: 4px solid var(--sky-500); }
+
+  /* BUTTONS */
+  .btn {
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    font-size: 14px;
+    padding: 12px 20px;
+    border-radius: 10px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    background: var(--sky);
+    color: var(--black);
+    transition: transform .08s ease, background .15s ease, box-shadow .15s ease;
+    text-transform: uppercase;
+    box-shadow: 0 4px 0 rgba(0,0,0,.35), 0 6px 18px rgba(56,189,248,.18);
+  }
+  .btn:hover { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0,0,0,.35); }
+  .btn:active { transform: translateY(4px); box-shadow: none; }
+  .btn.green   { background: var(--green);     color: var(--dark-blue); box-shadow: 0 4px 0 rgba(0,0,0,.35), 0 6px 18px rgba(134,239,172,.18); }
+  .btn.slate   { background: var(--slate-600); color: var(--slate-100); }
+  .btn.dark    { background: var(--dark-blue-2); color: var(--slate-100); }
+  .btn.ghost   {
+    background: transparent;
+    color: var(--sky);
+    border: 1px solid var(--sky);
+    box-shadow: none;
+  }
+  .btn.ghost:hover { background: rgba(56,189,248,.08); }
+
+  /* PANELS */
+  .panel {
+    background: linear-gradient(180deg, var(--slate-800) 0%, var(--slate-900) 100%);
+    border: 1px solid var(--slate-700);
+    border-radius: 16px;
+    padding: 22px;
+    box-shadow: var(--shadow);
+    margin-top: 22px;
+  }
+  .panel h3 {
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    font-size: 22px;
+    margin: 0 0 14px;
+    color: var(--sky);
+  }
+
+  /* LEADERBOARD */
+  .lb-tabs { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+  .lb-tab {
+    flex: 1;
+    text-align: center;
+    padding: 8px 12px;
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border-radius: 8px;
+    background: rgba(255,255,255,.03);
+    border: 1px solid var(--slate-700);
+    cursor: pointer;
+    color: var(--slate-400);
+    min-width: 90px;
+    transition: all .15s ease;
+  }
+  .lb-tab:hover { color: var(--sky); border-color: var(--sky); }
+  .lb-tab.active {
+    background: var(--sky);
+    color: var(--dark-blue);
+    border-color: var(--sky);
+  }
+  table.lb { width: 100%; border-collapse: collapse; font-size: 14px; }
+  table.lb th, table.lb td {
+    padding: 10px 10px; text-align: left;
+    border-bottom: 1px solid var(--slate-700);
+  }
+  table.lb th {
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-size: 11px;
+    color: var(--slate-400);
+  }
+  table.lb .rank {
+    width: 40px;
+    font-weight: 800;
+    color: var(--sky);
+    font-size: 16px;
+  }
+  table.lb tr:first-child .rank { color: var(--green); }
+  table.lb .empty {
+    text-align: center; padding: 26px; color: var(--slate-400);
+    font-style: italic;
+  }
+
+  /* QUIZ SCREEN */
+  .quiz {
+    background: linear-gradient(180deg, var(--slate-800) 0%, var(--slate-900) 100%);
+    border: 1px solid var(--slate-700);
+    border-radius: 18px;
+    padding: 26px;
+    box-shadow: var(--shadow);
+  }
+  .quiz-top {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 14px; gap: 12px; flex-wrap: wrap;
+  }
+  .qcounter {
+    font-weight: 800;
+    font-size: 16px;
+    letter-spacing: -0.01em;
+    color: var(--slate-100);
+  }
+  .qid {
+    font-weight: 500;
+    font-size: 11px; letter-spacing: 0.12em;
+    color: var(--slate-400);
+    margin-left: 10px; padding: 4px 8px;
+    border: 1px solid var(--slate-700); border-radius: 6px;
+    text-transform: uppercase;
+  }
+  .timer {
+    font-weight: 800;
+    font-size: 24px; letter-spacing: -0.02em;
+    padding: 8px 18px;
+    border-radius: 10px;
+    background: var(--dark-blue);
+    border: 1px solid var(--sky);
+    color: var(--sky);
+    min-width: 110px; text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+  .timer.warn   { color: var(--green);  border-color: var(--green); }
+  .timer.danger { color: var(--slate-100); background: var(--sky-500); border-color: var(--sky); animation: pulse .8s infinite; }
+  @keyframes pulse { 50% { transform: scale(1.05); } }
+
+  .progress {
+    height: 8px; width: 100%;
+    background: var(--dark-blue);
+    border-radius: 100px; overflow: hidden;
+    border: 1px solid var(--slate-700);
+    margin-bottom: 20px;
+  }
+  .progress > div {
+    height: 100%;
+    background: linear-gradient(90deg, var(--sky), var(--green));
+    transition: width .3s ease;
+  }
+
+  .question {
+    font-size: clamp(18px, 2.6vw, 24px);
+    font-weight: 600;
+    line-height: 1.45;
+    letter-spacing: -0.01em;
+    padding: 18px 18px;
+    background: var(--dark-blue);
+    border-left: 4px solid var(--sky);
+    border-radius: 10px;
+    margin-bottom: 18px;
+  }
+  .options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 600px) { .options { grid-template-columns: 1fr; } }
+  .opt {
+    text-align: left;
+    padding: 14px 16px;
+    background: var(--slate-800);
+    border: 1px solid var(--slate-700);
+    border-radius: 12px;
+    color: var(--slate-100);
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 15px;
+    line-height: 1.35;
+    cursor: pointer;
+    transition: all .15s ease;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .opt:hover {
+    transform: translateY(-2px);
+    border-color: var(--sky);
+    background: rgba(56,189,248,.06);
+  }
+  .opt .letter {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 30px; height: 30px; border-radius: 8px;
+    background: var(--dark-blue);
+    color: var(--sky);
+    font-weight: 800;
+    font-size: 14px;
+    flex-shrink: 0;
+    border: 1px solid var(--slate-700);
+  }
+  .opt.correct {
+    background: rgba(134,239,172,.10);
+    border-color: var(--green);
+    color: var(--slate-100);
+  }
+  .opt.correct .letter { background: var(--green); color: var(--dark-blue); border-color: var(--green); }
+  .opt.wrong {
+    background: rgba(56,189,248,.05);
+    border-color: var(--slate-600);
+    opacity: .7;
+  }
+  .opt.wrong .letter { background: var(--slate-600); color: var(--slate-100); border-color: var(--slate-600); }
+  .opt.locked { cursor: not-allowed; }
+
+  /* RESULTS */
+  .final { text-align: center; padding: 18px 14px; }
+  .final .label {
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--sky);
+  }
+  .final .score {
+    font-weight: 900;
+    font-size: clamp(60px, 12vw, 120px);
+    letter-spacing: -0.05em;
+    line-height: 1;
+    margin: 14px 0 6px;
+    color: var(--slate-100);
+  }
+  .final .score .total {
+    color: var(--slate-400);
+    font-weight: 600;
+  }
+  .final .msg { font-size: 18px; font-weight: 500; margin: 6px 0 22px; color: var(--slate-100); }
+
+  .name-entry {
+    display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin: 14px 0;
+  }
+  input[type="text"] {
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    padding: 12px 14px; font-size: 15px;
+    background: var(--dark-blue); color: var(--slate-100);
+    border: 1px solid var(--sky); border-radius: 10px;
+    min-width: 220px;
+  }
+  input[type="text"]::placeholder { color: var(--slate-400); }
+  input[type="text"]:focus { outline: none; box-shadow: 0 0 0 3px rgba(56,189,248,.25); }
+  .back-row { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
+
+  .hidden { display: none !important; }
+  .footer-tip {
+    text-align: center; margin-top: 24px;
+    color: var(--slate-400);
+    font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 500;
+  }
+  .round-ids {
+    margin-top: 14px;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--slate-400);
+    text-align: center;
+    font-weight: 500;
+  }
+  .round-ids span { color: var(--sky); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="header">
+    <h1 class="title">Quiz <span class="accent">Master</span></h1>
+    <div class="subtitle">5 Topics · 8 Questions · 2 Minute Sprint</div>
+  </header>
+
+  <section id="home">
+    <div class="grid">
+      <div class="pick ninjago">
+        <div>
+          <span class="badge">Spinjitzu Trivia</span>
+          <h2>Ninjago</h2>
+          <p>Lloyd, Kai, Jay, Cole, Zane and Nya. Hard mode — deep cuts only.</p>
+        </div>
+        <button class="btn green" onclick="startQuiz('ninjago')">Start Ninjago</button>
+      </div>
+
+      <div class="pick marvel">
+        <div>
+          <span class="badge">MCU + Comics</span>
+          <h2>Marvel</h2>
+          <p>Avengers, Guardians, X-Men. Real names, hidden lore.</p>
+        </div>
+        <button class="btn" onclick="startQuiz('marvel')">Start Marvel</button>
+      </div>
+
+      <div class="pick mario">
+        <div>
+          <span class="badge">Mushroom Kingdom</span>
+          <h2>Mario</h2>
+          <p>Power-ups, Koopalings, Pauline, plumbers and plot twists.</p>
+        </div>
+        <button class="btn dark" onclick="startQuiz('mario')">Start Mario</button>
+      </div>
+
+      <div class="pick sonic">
+        <div>
+          <span class="badge">Gotta Go Fast</span>
+          <h2>Sonic</h2>
+          <p>Chaos Emeralds, Shadow's origin, the Master Emerald, Mobius lore.</p>
+        </div>
+        <button class="btn green" onclick="startQuiz('sonic')">Start Sonic</button>
+      </div>
+
+      <div class="pick beyblade">
+        <div>
+          <span class="badge">Let It Rip</span>
+          <h2>Beyblade</h2>
+          <p>Bladebreakers, Metal Saga, Burst, Turbo and Beyblade X — 50 questions.</p>
+        </div>
+        <button class="btn" onclick="startQuiz('beyblade')">Start Beyblade</button>
+      </div>
+    </div>
+
+    <div class="panel" id="leaderboardPanel">
+      <h3>Leaderboard</h3>
+      <div class="lb-tabs">
+        <div class="lb-tab active" data-lb="ninjago"  onclick="switchLb('ninjago')">Ninjago</div>
+        <div class="lb-tab"        data-lb="marvel"   onclick="switchLb('marvel')">Marvel</div>
+        <div class="lb-tab"        data-lb="mario"    onclick="switchLb('mario')">Mario</div>
+        <div class="lb-tab"        data-lb="sonic"    onclick="switchLb('sonic')">Sonic</div>
+        <div class="lb-tab"        data-lb="beyblade" onclick="switchLb('beyblade')">Beyblade</div>
+      </div>
+      <table class="lb">
+        <thead><tr><th>#</th><th>Name</th><th>Score</th><th>Time Left</th></tr></thead>
+        <tbody id="lbBody"></tbody>
+      </table>
+    </div>
+
+    <div class="footer-tip">2 minute timer · 8 unique questions per round · no repeats</div>
+  </section>
+
+  <section id="quizScreen" class="hidden">
+    <div class="quiz">
+      <div class="quiz-top">
+        <div>
+          <span class="qcounter" id="qCounter">Question 1 of 8</span>
+          <span class="qid" id="qId">Bank #01</span>
+        </div>
+        <div class="timer" id="timer">2:00</div>
+      </div>
+      <div class="progress"><div id="progressBar" style="width:0%"></div></div>
+      <div class="question" id="questionText">Loading...</div>
+      <div class="options" id="optionsBox"></div>
+      <div class="round-ids" id="roundIds"></div>
+    </div>
+    <div class="back-row">
+      <button class="btn ghost" onclick="quitToHome()">Quit</button>
+    </div>
+  </section>
+
+  <section id="resultsScreen" class="hidden">
+    <div class="quiz final">
+      <div class="label" id="resultsTitle">Round Complete</div>
+      <div class="score"><span id="finalScoreNum">0</span><span class="total"> / 8</span></div>
+      <div class="msg" id="finalMsg">Nice run.</div>
+      <div class="round-ids" id="resultIds"></div>
+
+      <div id="namePrompt">
+        <p style="margin-bottom:6px; color: var(--slate-400); font-size:13px; letter-spacing:.08em; text-transform:uppercase;">Save your score</p>
+        <div class="name-entry">
+          <input type="text" id="playerName" maxlength="18" placeholder="Enter your name" />
+          <button class="btn" onclick="saveScore()">Save</button>
+        </div>
+      </div>
+
+      <div class="back-row">
+        <button class="btn slate" onclick="goHome()">Home</button>
+        <button class="btn green" id="playAgainBtn" onclick="playAgain()">Play Again</button>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+/* =======================
+   QUESTION BANKS
+   Ninjago / Marvel / Mario / Sonic — 40 each (hard)
+   Beyblade — 50 (reasonably hard)
+   Every question carries a stable id (1..N) for tracking
+   ======================= */
+const QUESTIONS = {
+  ninjago: [
+    { id: 1,  q: "Who created Zane and is also his 'father'?",                                 opts: ["Cyrus Borg", "Dr. Julien", "Master Wu", "Pythor"], a: 1 },
+    { id: 2,  q: "What is the name of the ninjas' flying ship?",                              opts: ["Storm Hawk", "Bounty Hunter", "Destiny's Bounty", "Golden Wing"], a: 2 },
+    { id: 3,  q: "Lloyd is the son of which villain?",                                        opts: ["Lord Garmadon", "The Overlord", "Master Chen", "Pythor"], a: 0 },
+    { id: 4,  q: "What is the Master of Wind's name (the ghost ninja)?",                      opts: ["Morro", "Yang", "Soto", "Krux"], a: 0 },
+    { id: 5,  q: "Master Chen controls which unusual element?",                               opts: ["Sound", "Amber (absorbs other powers)", "Smoke", "Shadow"], a: 1 },
+    { id: 6,  q: "What is Pythor's serpentine tribe?",                                        opts: ["Hypnobrai", "Constrictai", "Anacondrai", "Fangpyre"], a: 2 },
+    { id: 7,  q: "What is the name of the four-headed combined dragon the ninjas ride?",      opts: ["Storm Dragon", "Ultra Dragon", "Mega Dragon", "Spinjitzu Drake"], a: 1 },
+    { id: 8,  q: "What is Cole's last name?",                                                 opts: ["Walker", "Smith", "Brookstone", "Stone"], a: 2 },
+    { id: 9,  q: "What is Jay's last name?",                                                  opts: ["Walker", "Bolt", "Storm", "Spark"], a: 0 },
+    { id: 10, q: "What weapon lets you see the future / your enemies' moves?",                opts: ["Realm Crystal", "Sword of Sanctuary", "Scythe of Quakes", "Golden Sai"], a: 1 },
+    { id: 11, q: "What is the name of Master Wu's tea shop?",                                 opts: ["Steeper Wisdom", "Wu's Brew", "Golden Leaf", "Bounty Brews"], a: 0 },
+    { id: 12, q: "Who is Skylor's father?",                                                   opts: ["Garmadon", "Master Chen", "Pythor", "Cyrus Borg"], a: 1 },
+    { id: 13, q: "What is Pixal's role in the team?",                                         opts: ["Spy", "AI / Samurai X pilot", "Pilot", "Cook"], a: 1 },
+    { id: 14, q: "Who is the leader of the Skulkin army?",                                    opts: ["Samukai", "Krazi", "Frakjaw", "Wyplash"], a: 0 },
+    { id: 15, q: "Which season introduces the Tournament of Elements?",                        opts: ["Season 2", "Season 3", "Season 4", "Season 6"], a: 2 },
+    { id: 16, q: "Who is the Djinn villain that traps the ninjas?",                           opts: ["Aspheera", "Nadakhan", "Pythor", "Garmadon"], a: 1 },
+    { id: 17, q: "What is Nadakhan's ship called?",                                           opts: ["Misfortune's Keep", "Bounty's Shadow", "Salt Sea", "Black Sail"], a: 0 },
+    { id: 18, q: "Who are the twin Masters of Time?",                                         opts: ["Krux and Acronix", "Chop and Chill", "Wu and Garmadon", "Soto and Doubloon"], a: 0 },
+    { id: 19, q: "Who is the very first evil being, opposite of the First Spinjitzu Master?", opts: ["The Overlord", "Aspheera", "Garmadon", "Nadakhan"], a: 0 },
+    { id: 20, q: "Cole's father (a famous singer) is named what?",                            opts: ["Lou", "Ray", "Ed", "Karlof"], a: 0 },
+    { id: 21, q: "Kai and Nya's father was a what by trade?",                                 opts: ["Farmer", "Blacksmith", "Fisherman", "Carpenter"], a: 1 },
+    { id: 22, q: "What is the name of Jay's adoptive parents (who own a junkyard)?",          opts: ["Ed and Edna", "Ray and Maya", "Lou and Lily", "Cyrus and Pixal"], a: 0 },
+    { id: 23, q: "What is the snake tribe known for hypnotizing victims?",                    opts: ["Fangpyre", "Hypnobrai", "Venomari", "Constrictai"], a: 1 },
+    { id: 24, q: "What is the floating training ground called?",                              opts: ["Mount Spinjitzu", "Monastery of Spinjitzu", "Temple of Light", "Borg Tower"], a: 1 },
+    { id: 25, q: "Who created the robot Nindroid army in Season 3?",                          opts: ["Cyrus Borg", "The Overlord", "Garmadon", "Pythor"], a: 1 },
+    { id: 26, q: "What is the name of Cyrus Borg's tech company tower?",                      opts: ["Borg Tower", "Tech Spire", "Iron Peak", "Cyrus Heights"], a: 0 },
+    { id: 27, q: "What allows travel between realms?",                                        opts: ["Spirit Smoke", "Realm Crystal", "Sky Bridge", "Travel Tea"], a: 3 },
+    { id: 28, q: "Which crystal can open portals to any realm?",                              opts: ["Realm Crystal", "Sky Crystal", "Storm Crystal", "Heart Crystal"], a: 0 },
+    { id: 29, q: "Princess Vania rules over which underground kingdom?",                       opts: ["Shintaro", "Cloud Kingdom", "Djinjago", "Stiix"], a: 0 },
+    { id: 30, q: "What is the name of King Vangelis's daughter?",                              opts: ["Skylor", "Vania", "Harumi", "Misako"], a: 1 },
+    { id: 31, q: "Who is Harumi, secretly?",                                                  opts: ["The Quiet One (Sons of Garmadon leader)", "A Ninja", "Pixal's sister", "Master Wu's daughter"], a: 0 },
+    { id: 32, q: "Who tricks Lloyd in Season 8 (Sons of Garmadon)?",                          opts: ["Harumi", "Skylor", "Nya", "Pixal"], a: 0 },
+    { id: 33, q: "What new variant of Spinjitzu is the most dangerous and 'forbidden'?",      opts: ["Tornado of Creation", "Forbidden Spinjitzu", "Lightning Spinjitzu", "Storm Style"], a: 1 },
+    { id: 34, q: "What is the name of the ice realm where the Ice Emperor reigns?",           opts: ["Land of the Frozen Sea", "Never-Realm", "Frost Realm", "Ice Empire"], a: 1 },
+    { id: 35, q: "The Ice Emperor is actually which ninja, brainwashed?",                     opts: ["Zane", "Cole", "Lloyd", "Kai"], a: 0 },
+    { id: 36, q: "Master Wu and Lord Garmadon are which relation?",                            opts: ["Best friends", "Brothers", "Father and son", "Master and student"], a: 1 },
+    { id: 37, q: "Who is Echo Zane?",                                                          opts: ["A second robot built by Dr. Julien", "Zane's brother in disguise", "A virus version", "Zane's clone in the Digiverse"], a: 0 },
+    { id: 38, q: "What does 'NINJA-GO!' actually trigger?",                                    opts: ["A teleport", "Spinjitzu (the spinning attack)", "Their power-up", "A summon"], a: 1 },
+    { id: 39, q: "Aspheera is best described as what kind of villain?",                       opts: ["A robot", "An ancient pyro-snake sorceress", "A ghost", "A Djinn"], a: 1 },
+    { id: 40, q: "What does the Mega Weapon do, when Lord Garmadon wields it?",               opts: ["Creates anything he wishes", "Teleports him", "Doubles his strength", "Summons dragons"], a: 0 }
+  ],
+  marvel: [
+    { id: 1,  q: "What is Black Widow's real name?",                                          opts: ["Natalia Stark", "Natasha Romanoff", "Yelena Romanoff", "Maria Hill"], a: 1 },
+    { id: 2,  q: "What is Hawkeye's real name?",                                              opts: ["Clint Barton", "Sam Wilson", "Bruce Banner", "Pietro Maximoff"], a: 0 },
+    { id: 3,  q: "What is Scarlet Witch's real name?",                                        opts: ["Wanda Maximoff", "Carol Danvers", "Jean Grey", "Jessica Drew"], a: 0 },
+    { id: 4,  q: "Who is the Winter Soldier?",                                                opts: ["Sam Wilson", "Bucky Barnes", "John Walker", "Pietro Maximoff"], a: 1 },
+    { id: 5,  q: "Falcon's real name?",                                                       opts: ["Sam Wilson", "Joaquín Torres", "Eli Bradley", "Riley"], a: 0 },
+    { id: 6,  q: "Star-Lord's real name?",                                                    opts: ["Peter Parker", "Peter Quill", "Peter Maximoff", "Peter Hayden"], a: 1 },
+    { id: 7,  q: "Who is Star-Lord's father in the MCU?",                                     opts: ["Yondu", "Ego the Living Planet", "Thanos", "J'son"], a: 1 },
+    { id: 8,  q: "Who is the leader of the Ravagers who raised Peter Quill?",                  opts: ["Kraglin", "Ego", "Yondu Udonta", "Stakar"], a: 2 },
+    { id: 9,  q: "What is the Guardians' spaceship called?",                                  opts: ["The Milano", "The Benatar", "The Eclector", "The Quinjet"], a: 0 },
+    { id: 10, q: "What metal is Captain America's shield made of?",                            opts: ["Adamantium", "Vibranium", "Uru", "Titanium"], a: 1 },
+    { id: 11, q: "What metal makes Wolverine's claws indestructible?",                         opts: ["Adamantium", "Vibranium", "Uru", "Titanium"], a: 0 },
+    { id: 12, q: "What planet hosts the Grandmaster's arena in Ragnarok?",                     opts: ["Xandar", "Sakaar", "Knowhere", "Morag"], a: 1 },
+    { id: 13, q: "What is the name of the dwarf king who helps Thor forge Stormbreaker?",      opts: ["Brokk", "Eitri", "Sindri", "Volstagg"], a: 1 },
+    { id: 14, q: "Who is the Ancient One?",                                                    opts: ["Doctor Strange's mentor", "Wanda's mother", "Thanos's mother", "Captain Marvel's predecessor"], a: 0 },
+    { id: 15, q: "Where is Kamar-Taj located?",                                                opts: ["Tibet", "Kathmandu, Nepal", "Bhutan", "Mumbai"], a: 1 },
+    { id: 16, q: "What is the name of Doctor Strange's cloak?",                                opts: ["Cloak of Levitation", "Cape of Eternity", "Cloak of Shadows", "Mantle of Vishanti"], a: 0 },
+    { id: 17, q: "Who is Mordo, by the end of his arc?",                                       opts: ["A reliable ally", "Strange's friend turned villain", "A demon", "Wong's apprentice"], a: 1 },
+    { id: 18, q: "Tony Stark's first AI assistant (before FRIDAY) is called?",                 opts: ["JARVIS", "EDITH", "KAREN", "VERONICA"], a: 0 },
+    { id: 19, q: "Vision's body was made by combining vibranium with what?",                   opts: ["The Mind Stone", "The Soul Stone", "Ultron's processor", "Gamma radiation"], a: 0 },
+    { id: 20, q: "Who is the leader of the X-Men in most stories?",                            opts: ["Magneto", "Cyclops", "Professor X", "Wolverine"], a: 2 },
+    { id: 21, q: "What kingdom does Black Panther rule?",                                      opts: ["Genosha", "Wakanda", "Latveria", "Sokovia"], a: 1 },
+    { id: 22, q: "What is the heart-shaped herb for in Wakanda?",                              opts: ["Healing wounds", "Granting Black Panther powers", "Curing poison", "Communicating with ancestors"], a: 1 },
+    { id: 23, q: "Who is Shuri to T'Challa?",                                                  opts: ["His cousin", "His daughter", "His sister", "His aunt"], a: 2 },
+    { id: 24, q: "Who runs the Daily Bugle?",                                                  opts: ["J. Jonah Jameson", "Norman Osborn", "Robbie Robertson", "Ben Urich"], a: 0 },
+    { id: 25, q: "Who is Venom's most famous host?",                                            opts: ["Peter Parker", "Eddie Brock", "Cletus Kasady", "Flash Thompson"], a: 1 },
+    { id: 26, q: "What's the red symbiote born from Venom called?",                              opts: ["Riot", "Carnage", "Toxin", "Anti-Venom"], a: 1 },
+    { id: 27, q: "What is Loki's relation to Thor?",                                            opts: ["Twin brother", "Adoptive brother", "Half-brother", "Cousin"], a: 1 },
+    { id: 28, q: "Who is Hela to Thor?",                                                       opts: ["His daughter", "His older sister", "His ex-wife", "His servant"], a: 1 },
+    { id: 29, q: "What stones did Thanos collect?",                                            opts: ["Soul Shards", "Infinity Stones", "Eternity Gems", "Power Crystals"], a: 1 },
+    { id: 30, q: "Which Infinity Stone was hidden in Loki's scepter?",                          opts: ["Mind Stone", "Soul Stone", "Power Stone", "Reality Stone"], a: 0 },
+    { id: 31, q: "Which Infinity Stone did Vision carry in his head?",                          opts: ["Mind Stone", "Soul Stone", "Time Stone", "Space Stone"], a: 0 },
+    { id: 32, q: "Where was the Soul Stone kept?",                                              opts: ["Vormir", "Morag", "Knowhere", "Sakaar"], a: 0 },
+    { id: 33, q: "What is the home realm of the dwarves who forge weapons?",                    opts: ["Nidavellir", "Asgard", "Vanaheim", "Alfheim"], a: 0 },
+    { id: 34, q: "Who is Mantis to the Guardians?",                                            opts: ["A scientist", "An empath", "A mechanic", "A pilot"], a: 1 },
+    { id: 35, q: "What kind of alien is Gamora?",                                              opts: ["Skrull", "Kree", "Zen-Whoberis", "Centaurian"], a: 2 },
+    { id: 36, q: "What was the call sign Carol Danvers used in the Air Force?",                opts: ["Maverick", "Vers", "Avenger", "Goose"], a: 1 },
+    { id: 37, q: "Who is Carol Danvers' best friend (Air Force pilot)?",                        opts: ["Maria Rambeau", "Monica Rambeau", "Jessica Drew", "Karla Sofen"], a: 0 },
+    { id: 38, q: "What organization did Nick Fury lead?",                                       opts: ["S.W.O.R.D.", "S.H.I.E.L.D.", "HYDRA", "A.I.M."], a: 1 },
+    { id: 39, q: "Quicksilver's real name?",                                                   opts: ["Wanda Maximoff", "Pietro Maximoff", "Peter Maximoff", "Erik Lehnsherr"], a: 1 },
+    { id: 40, q: "Who builds Ultron together in Age of Ultron?",                                opts: ["Tony Stark alone", "Bruce Banner alone", "Tony Stark and Bruce Banner", "Tony Stark and Hank Pym"], a: 2 }
+  ],
+  mario: [
+    { id: 1,  q: "What is Mario's profession?",                                                opts: ["Carpenter", "Plumber", "Doctor", "Painter"], a: 1 },
+    { id: 2,  q: "Who is Mario's twin brother?",                                               opts: ["Wario", "Waluigi", "Luigi", "Yoshi"], a: 2 },
+    { id: 3,  q: "What kingdom does Princess Peach rule?",                                     opts: ["Sarasaland", "Mushroom Kingdom", "Bean Bean Kingdom", "Cap Kingdom"], a: 1 },
+    { id: 4,  q: "Who is the princess of Sarasaland?",                                         opts: ["Peach", "Rosalina", "Daisy", "Pauline"], a: 2 },
+    { id: 5,  q: "Who watches over the Lumas in the cosmos?",                                  opts: ["Daisy", "Rosalina", "Pauline", "Cappy"], a: 1 },
+    { id: 6,  q: "Bowser's son is named what?",                                                opts: ["Wario Jr.", "Bowser Jr.", "Larry", "Iggy"], a: 1 },
+    { id: 7,  q: "How many Koopalings does Bowser have?",                                      opts: ["5", "6", "7", "8"], a: 2 },
+    { id: 8,  q: "Which Koopaling has blue hair and is the eldest 'leader'?",                   opts: ["Larry", "Roy", "Ludwig von Koopa", "Iggy"], a: 2 },
+    { id: 9,  q: "What is the name of Peach's loyal mushroom advisor?",                        opts: ["Toad", "Toadette", "Toadsworth", "Captain Toad"], a: 2 },
+    { id: 10, q: "Mario's iconic catchphrase is...",                                           opts: ["Banzai!", "It's-a me, Mario!", "Wahoo!", "Mama mia!"], a: 1 },
+    { id: 11, q: "What power-up turns Mario into Raccoon Mario?",                              opts: ["Fire Flower", "Super Leaf", "Cape Feather", "Star"], a: 1 },
+    { id: 12, q: "What power-up lets Mario fly with a cape (Super Mario World)?",              opts: ["Super Leaf", "Cape Feather", "Wing Cap", "Tanooki Suit"], a: 1 },
+    { id: 13, q: "What power-up makes Mario invincible?",                                      opts: ["Star", "Mushroom", "Fire Flower", "Ice Flower"], a: 0 },
+    { id: 14, q: "Which power-up turns Mario into a cat?",                                     opts: ["Super Bell", "Boomerang Flower", "Acorn", "Cat Mushroom"], a: 0 },
+    { id: 15, q: "What is Cappy in Super Mario Odyssey?",                                      opts: ["A hat-shaped ghost from Cap Kingdom", "A Toad in disguise", "A Luma", "Bowser's hat"], a: 0 },
+    { id: 16, q: "What is the main collectible in Super Mario 64?",                            opts: ["Stars", "Shines", "Moons", "Coins"], a: 0 },
+    { id: 17, q: "What is the main collectible in Super Mario Sunshine?",                      opts: ["Stars", "Shine Sprites", "Moons", "Power Moons"], a: 1 },
+    { id: 18, q: "What is the main collectible in Super Mario Odyssey?",                       opts: ["Stars", "Shines", "Power Moons", "Crowns"], a: 2 },
+    { id: 19, q: "What spray gizmo does Mario use in Sunshine?",                               opts: ["F.L.U.D.D.", "Poltergust", "Splash Pack", "AquaJet"], a: 0 },
+    { id: 20, q: "What ghost-vacuum does Luigi use in Luigi's Mansion?",                       opts: ["F.L.U.D.D.", "Poltergust", "Boo-Buster", "Phantom Pack"], a: 1 },
+    { id: 21, q: "Who is the inventor / professor that helps Luigi in Luigi's Mansion?",       opts: ["Toadsworth", "Cranky Kong", "Professor E. Gadd", "Cappy"], a: 2 },
+    { id: 22, q: "Who is the king of the Boos?",                                               opts: ["King Boo", "Dry Bowser", "Lord Boo", "Boo Diddly"], a: 0 },
+    { id: 23, q: "What is the name of the dinosaur Mario rides?",                              opts: ["Birdo", "Yoshi", "Rex", "Petey"], a: 1 },
+    { id: 24, q: "Which island is Yoshi from?",                                                opts: ["Cocoanut Island", "Yoshi's Island", "Isle Delfino", "Dinosaur Land"], a: 1 },
+    { id: 25, q: "Who is Birdo?",                                                              opts: ["A pink dinosaur who shoots eggs", "Bowser's pet", "A Yoshi cousin", "A Koopaling"], a: 0 },
+    { id: 26, q: "Who is Wario?",                                                              opts: ["Mario's brother", "Mario's evil counterpart", "Bowser's son", "A Koopa"], a: 1 },
+    { id: 27, q: "Who is Waluigi associated with?",                                            opts: ["Bowser", "Wario", "Luigi", "Mario"], a: 1 },
+    { id: 28, q: "Where was Pauline first introduced as Mario's love interest?",                opts: ["Donkey Kong (1981)", "Super Mario Bros.", "Super Mario 64", "Super Mario Odyssey"], a: 0 },
+    { id: 29, q: "In Super Mario Odyssey, Pauline is the mayor of which city?",                opts: ["Bonneton", "New Donk City", "Tostarena", "Mount Volbono"], a: 1 },
+    { id: 30, q: "Who is Cranky Kong, in classic lore?",                                       opts: ["Donkey Kong's father", "The original Donkey Kong / DK's grandfather", "DK's pet", "DK Jr."], a: 1 },
+    { id: 31, q: "Donkey Kong's nephew is named what?",                                        opts: ["Diddy Kong", "Funky Kong", "Lanky Kong", "Chunky Kong"], a: 0 },
+    { id: 32, q: "What's the name of Bowser's airship fleet?",                                 opts: ["Doom Ships", "Koopa Cruisers", "Airships", "Skull Fleet"], a: 2 },
+    { id: 33, q: "Green Shell in Mario Kart does what?",                                       opts: ["Tracks the leader", "Travels in a straight line", "Drops behind", "Explodes immediately"], a: 1 },
+    { id: 34, q: "Red Shell in Mario Kart does what?",                                          opts: ["Tracks the next racer ahead", "Targets first place specifically", "Drops behind", "Travels random"], a: 0 },
+    { id: 35, q: "Blue Shell in Mario Kart targets whom?",                                     opts: ["The racer behind you", "The racer ahead of you", "First place", "Yourself"], a: 2 },
+    { id: 36, q: "What 1985 game first starred Mario as the hero (not just the cameo)?",       opts: ["Donkey Kong", "Mario Bros.", "Super Mario Bros.", "Mario Paint"], a: 2 },
+    { id: 37, q: "What is the name of Mario & Luigi's home city (in older lore)?",             opts: ["Brooklyn", "Manhattan", "Queens", "Mushroom City"], a: 0 },
+    { id: 38, q: "Bowser Jr. typically rides what into battle?",                               opts: ["A Yoshi", "A Clown Car", "A Bullet Bill", "An Airship"], a: 1 },
+    { id: 39, q: "Yoshi defeats most enemies by doing what?",                                  opts: ["Headbutting", "Eating them and laying eggs", "Spitting fire", "Spinning"], a: 1 },
+    { id: 40, q: "What does the Tanooki Suit let Mario do that the Super Leaf doesn't?",        opts: ["Run faster", "Turn into a statue", "Swim", "Carry items"], a: 1 }
+  ],
+  sonic: [
+    { id: 1,  q: "What animal is Sonic?",                                                      opts: ["Hedgehog", "Porcupine", "Echidna", "Fox"], a: 0 },
+    { id: 2,  q: "What is Tails' real name?",                                                  opts: ["Miles 'Tails' Prower", "Mike Tails", "Tails Foxworth", "Miles Foxworth"], a: 0 },
+    { id: 3,  q: "What animal is Knuckles?",                                                   opts: ["Hedgehog", "Echidna", "Bat", "Anteater"], a: 1 },
+    { id: 4,  q: "What does Knuckles guard?",                                                  opts: ["Chaos Emeralds", "The Master Emerald", "Angel Island's keys", "The Time Stones"], a: 1 },
+    { id: 5,  q: "What animal is Amy Rose?",                                                   opts: ["Hedgehog", "Rabbit", "Bat", "Squirrel"], a: 0 },
+    { id: 6,  q: "Amy's signature weapon is the...",                                           opts: ["Piko Piko Hammer", "Power Glove", "Spin Disc", "Chaos Spear"], a: 0 },
+    { id: 7,  q: "Who created Shadow the Hedgehog?",                                           opts: ["Dr. Eggman", "Professor Gerald Robotnik", "Black Doom", "Maria Robotnik"], a: 1 },
+    { id: 8,  q: "What is Shadow often called in lore?",                                       opts: ["The Dark Hedgehog", "The Ultimate Lifeform", "The Chaos Knight", "The Last Hedgehog"], a: 1 },
+    { id: 9,  q: "Who was Shadow's best friend, who died on the ARK?",                          opts: ["Tikal", "Maria Robotnik", "Rouge", "Cream"], a: 1 },
+    { id: 10, q: "What is the name of the space colony where Shadow was created?",              opts: ["Space Colony ARK", "Death Egg", "Final Egg", "Hidden Palace"], a: 0 },
+    { id: 11, q: "Who is Rouge?",                                                              opts: ["A fox spy", "A treasure-hunting bat", "A cat thief", "A robot agent"], a: 1 },
+    { id: 12, q: "Who is Silver?",                                                              opts: ["A silver fox from the past", "A psychokinetic hedgehog from the future", "A robot built by Eggman", "An echidna"], a: 1 },
+    { id: 13, q: "Big the Cat's pet frog is named what?",                                      opts: ["Cheese", "Hopper", "Froggy", "Greenie"], a: 2 },
+    { id: 14, q: "Cream the Rabbit's Chao companion is named?",                                opts: ["Cheese", "Froggy", "Chocola", "Marine"], a: 0 },
+    { id: 15, q: "What are Chao?",                                                              opts: ["Tiny critters you raise", "Eggman's robots", "Crystal monsters", "Ghosts"], a: 0 },
+    { id: 16, q: "How many Chaos Emeralds are there?",                                          opts: ["5", "6", "7", "8"], a: 2 },
+    { id: 17, q: "What happens when Sonic collects all 7 Chaos Emeralds?",                      opts: ["He gets a new outfit", "He becomes Super Sonic (golden)", "He can fly", "He gets infinite rings"], a: 1 },
+    { id: 18, q: "What is the first level (Zone) in Sonic the Hedgehog (1991)?",                opts: ["Marble Zone", "Green Hill Zone", "Spring Yard Zone", "Star Light Zone"], a: 1 },
+    { id: 19, q: "Eggman's real name is...",                                                   opts: ["Dr. Ivo Robotnik", "Dr. Gerald Robotnik", "Dr. Eggworth", "Dr. Edmund Egman"], a: 0 },
+    { id: 20, q: "Eggman's giant space fortress is called the...",                              opts: ["Final Egg", "Death Egg", "Egg Carrier", "Egg Fleet"], a: 1 },
+    { id: 21, q: "The Death Egg is a parody of what famous space station?",                     opts: ["The Death Star (Star Wars)", "Babylon 5", "Cybertron", "Galactus"], a: 0 },
+    { id: 22, q: "Who is Metal Sonic?",                                                         opts: ["Sonic's robot duplicate built by Eggman", "An evil Sonic from the future", "Sonic's brother", "A glitch"], a: 0 },
+    { id: 23, q: "Who is the ancient echidna princess connected to Chaos?",                    opts: ["Tikal", "Tessa", "Pachacamac", "Aleena"], a: 0 },
+    { id: 24, q: "What is Chaos (the boss in Sonic Adventure)?",                                opts: ["A demon", "A water creature/god", "A robot", "An echidna"], a: 1 },
+    { id: 25, q: "Sonic's age according to canon is...",                                        opts: ["13", "14", "15", "16"], a: 2 },
+    { id: 26, q: "Tails's age (in classic canon) is...",                                        opts: ["6", "7", "8", "9"], a: 2 },
+    { id: 27, q: "Sonic's favorite food is...",                                                opts: ["Chili dogs", "Burgers", "Apples", "Pizza"], a: 0 },
+    { id: 28, q: "How many rings does Sonic need to *survive* a hit?",                          opts: ["0", "At least 1", "At least 50", "100"], a: 1 },
+    { id: 29, q: "GUN stands for...",                                                          opts: ["Galactic United Nations", "Guardian Units of Nations", "Global UN", "Government United Network"], a: 1 },
+    { id: 30, q: "The Chaotix detective agency's leader is...",                                opts: ["Charmy Bee", "Espio the Chameleon", "Vector the Crocodile", "Mighty"], a: 2 },
+    { id: 31, q: "Which Chaotix member is a purple ninja chameleon?",                           opts: ["Espio", "Mighty", "Ray", "Bark"], a: 0 },
+    { id: 32, q: "Which Chaotix member is a small bee?",                                       opts: ["Buzz", "Charmy", "Honey", "Stinger"], a: 1 },
+    { id: 33, q: "What special move is Sonic's mid-air targeting attack?",                     opts: ["Spin Dash", "Drop Dash", "Homing Attack", "Sonic Boom"], a: 2 },
+    { id: 34, q: "What's the level themed around a tropical resort and a giant hotel?",        opts: ["Casino Night Zone", "Hotel Sky", "Emerald Coast", "Seaside Hill"], a: 2 },
+    { id: 35, q: "Knuckles' home island is called...",                                          opts: ["Angel Island", "Mystic Ruins", "Floating Island", "Both Angel Island and Floating Island"], a: 3 },
+    { id: 36, q: "What controls and balances the Chaos Emeralds?",                              opts: ["The Master Emerald", "The Sol Emerald", "The Time Stones", "Eggman's reactor"], a: 0 },
+    { id: 37, q: "What are the Time Stones from Sonic CD used for?",                            opts: ["Stopping time", "Travelling through time", "Healing", "Boosting speed"], a: 1 },
+    { id: 38, q: "Sonic's signature ground attack is the...",                                  opts: ["Spin Dash", "Shadow Slash", "Boost Slide", "Sonic Roll"], a: 0 },
+    { id: 39, q: "Sonic Heroes splits teams into how many character roles?",                   opts: ["2 (Heroes/Villains)", "3 (Speed/Power/Flight)", "4 (Earth/Wind/Fire/Water)", "5"], a: 1 },
+    { id: 40, q: "Which hedgehog uses psychokinesis to lift and throw objects?",               opts: ["Sonic", "Shadow", "Silver", "Manic"], a: 2 }
+  ],
+  beyblade: [
+    { id: 1,  q: "What is the famous Beyblade launch phrase?",                                  opts: ["Let it rip!", "Spin to win!", "Bey forever!", "Go for the burst!"], a: 0 },
+    { id: 2,  q: "What team does Tyson lead in the original anime?",                            opts: ["Bladebreakers", "White Tigers", "All Starz", "Demolition Boys"], a: 0 },
+    { id: 3,  q: "What is Tyson Granger's signature Beyblade?",                                 opts: ["Dranzer", "Driger", "Dragoon", "Draciel"], a: 2 },
+    { id: 4,  q: "What spirit lives inside Dragoon?",                                          opts: ["Tiger", "Phoenix", "Dragon", "Turtle"], a: 2 },
+    { id: 5,  q: "Whose Beyblade is Dranzer?",                                                 opts: ["Tyson", "Kai Hiwatari", "Max", "Ray"], a: 1 },
+    { id: 6,  q: "What mythological creature is the Dranzer bit-beast?",                       opts: ["Dragon", "Phoenix", "Griffin", "Hydra"], a: 1 },
+    { id: 7,  q: "Max Tate's Beyblade is called...",                                            opts: ["Draciel", "Drigger", "Dranzer", "Drago"], a: 0 },
+    { id: 8,  q: "What creature is the Driger bit-beast?",                                    opts: ["White Tiger", "Lion", "Cheetah", "Wolf"], a: 0 },
+    { id: 9,  q: "What dark organisation runs the Abbey in the original series?",              opts: ["BIOVOLT", "Dark Moon", "HYDRA", "Black Star"], a: 0 },
+    { id: 10, q: "Who is the cold leader of BIOVOLT / the Abbey?",                              opts: ["Voltaire", "Boris Balkov", "Tala", "Dr. Zaggart"], a: 1 },
+    { id: 11, q: "Who is the main blader of Beyblade Metal Fusion?",                            opts: ["Tyson", "Kai", "Gingka Hagane", "Valt"], a: 2 },
+    { id: 12, q: "Gingka's signature first Beyblade is...",                                    opts: ["Storm Pegasus", "Galaxy Leone", "Lightning L-Drago", "Flash Sagittario"], a: 0 },
+    { id: 13, q: "Who is the wild, stoic rival of Gingka with a lion Bey?",                    opts: ["Tsubasa", "Yu", "Kenta", "Kyoya Tategami"], a: 3 },
+    { id: 14, q: "Kyoya's signature Bey in Metal Fusion is...",                                 opts: ["Rock Leone", "Earth Aquila", "Flame Sagittario", "Storm Wolf"], a: 0 },
+    { id: 15, q: "What is the dangerous Bey Ryuga uses in Metal Fusion?",                       opts: ["Lightning L-Drago", "Death Pegasus", "Dark Wolf", "Burning Cerberus"], a: 0 },
+    { id: 16, q: "What is special about L-Drago's spin direction?",                              opts: ["It spins very slowly", "It spins LEFT (opposite direction)", "It cannot spin in arenas", "It changes direction every second"], a: 1 },
+    { id: 17, q: "Which evil group does Ryuga first work for?",                                  opts: ["Dark Nebula", "Hades Inc", "Star Breakers", "Shadow Syndicate"], a: 0 },
+    { id: 18, q: "Who is the smart mechanic who maintains Gingka's Bey?",                       opts: ["Madoka Amano", "Hikaru", "Yuki", "Sora"], a: 0 },
+    { id: 19, q: "Kenta Yumiya wields which Bey?",                                              opts: ["Earth Aquila", "Storm Capricorn", "Flame Sagittario", "Burn Phoenix"], a: 2 },
+    { id: 20, q: "Tsubasa Otori's signature Bey is...",                                         opts: ["Earth Aquila (Eagle)", "Flame Libra", "Rock Bull", "Storm Hawk"], a: 0 },
+    { id: 21, q: "Yu Tendo's Bey is named?",                                                   opts: ["Flame Sagittario", "Flame Libra", "Burn Wolf", "Galaxy Aries"], a: 1 },
+    { id: 22, q: "The final great villain Bey of the Metal Saga is...",                         opts: ["Nemesis", "Hades", "Diabolos", "Cyclops"], a: 0 },
+    { id: 23, q: "Beyblade is made by which Japanese toy company?",                              opts: ["Bandai", "Takara Tomy", "Konami", "Sega"], a: 1 },
+    { id: 24, q: "Who created the original Beyblade manga?",                                   opts: ["Eiichiro Oda", "Akira Toriyama", "Takao Aoki", "Yu Watase"], a: 2 },
+    { id: 25, q: "Which of these is NOT one of the four Beyblade types?",                       opts: ["Attack", "Defense", "Stamina", "Lightning"], a: 3 },
+    { id: 26, q: "The bowl-shaped Beyblade arena is called a...",                                opts: ["Battlebowl", "Beystadium", "Spinring", "Bey-arena"], a: 1 },
+    { id: 27, q: "Who is the main character of Beyblade Burst?",                                opts: ["Aiga Akaba", "Valt Aoi", "Hyuga Hizashi", "Shu Kurenai"], a: 1 },
+    { id: 28, q: "Valt's signature Beyblade is called...",                                      opts: ["Valtryek (Victory Valkyrie)", "Spryzen", "Achilles", "Pegasus"], a: 0 },
+    { id: 29, q: "What is Shu Kurenai's signature Beyblade?",                                   opts: ["Spryzen (Storm Spriggan)", "Wyvron", "Kerbeus", "Fafnir"], a: 0 },
+    { id: 30, q: "In the Burst series, what brand-new thing can happen during battle?",         opts: ["The Bey can fly", "The Bey 'bursts' into pieces", "The Bey changes colour", "The Bey splits in two"], a: 1 },
+    { id: 31, q: "A Burst Finish in Beyblade Burst scores how many points?",                    opts: ["1", "2", "3", "4"], a: 1 },
+    { id: 32, q: "A Survivor or Ring-Out Finish scores how many points?",                       opts: ["1", "2", "3", "5"], a: 0 },
+    { id: 33, q: "What is Lui Shirasagi's signature Beyblade?",                                  opts: ["Lost Longinus", "Hell Salamander", "Drain Fafnir", "Z Achilles"], a: 0 },
+    { id: 34, q: "What is Free De La Hoya's powerful Beyblade?",                                opts: ["Drain Fafnir", "Lost Longinus", "Cho-Z Spriggan", "Hyperion"], a: 0 },
+    { id: 35, q: "What's special about Drain Fafnir?",                                         opts: ["It uses fire", "It spins LEFT and drains stamina", "It splits in half", "It's the heaviest Bey"], a: 1 },
+    { id: 36, q: "The main blader of Beyblade Burst Turbo is...",                                opts: ["Valt", "Phi", "Hyuga", "Aiga Akaba"], a: 3 },
+    { id: 37, q: "Aiga's signature Beyblade is...",                                              opts: ["Z Achilles (Zet Achilles)", "Hyperion", "Helios", "Bel"], a: 0 },
+    { id: 38, q: "The newest Beyblade anime / toy line (2023+) is called?",                     opts: ["Beyblade X", "Beyblade Surge", "Beyblade QuadStrike", "Beyblade Ultra"], a: 0 },
+    { id: 39, q: "What tool is used to spin a Beyblade?",                                      opts: ["A magnet", "A launcher (ripcord or string)", "Your hand only", "A motor"], a: 1 },
+    { id: 40, q: "In an original Beyblade, what is the small disc with the bit-beast image called?", opts: ["Bit Chip", "Power Disc", "Cap Star", "Spirit Lid"], a: 0 },
+    { id: 41, q: "What part adds mass and stability in a classic Beyblade?",                   opts: ["Attack Ring", "Weight Disk", "Blade Base", "Spin Gear"], a: 1 },
+    { id: 42, q: "The outer offensive ring of a classic Beyblade is called?",                  opts: ["Attack Ring", "Power Edge", "Defense Ring", "Strike Plate"], a: 0 },
+    { id: 43, q: "Tyson's grandfather is best known for practising what?",                      opts: ["Sumo", "Kendo (sword)", "Karate", "Archery"], a: 1 },
+    { id: 44, q: "'Jin of the Gale' is the secret identity of...",                              opts: ["Tyson's father", "Kai's brother", "Tyson's older brother Hiro Granger", "Boris's son"], a: 2 },
+    { id: 45, q: "What colour is Gingka Hagane's hair?",                                       opts: ["Blue", "Red", "Black", "Green"], a: 1 },
+    { id: 46, q: "The Pegasus Bey series (Gingka's) uses what mythical animal?",                opts: ["Unicorn", "Pegasus (winged horse)", "Phoenix", "Dragon-horse"], a: 1 },
+    { id: 47, q: "Beyblade was first released in Japan in which year?",                         opts: ["1999", "2003", "1995", "2008"], a: 0 },
+    { id: 48, q: "Phi appears as a villain in which Beyblade Burst series?",                    opts: ["Burst Rise / Surge", "Burst Evolution", "Original Burst", "Beyblade X"], a: 0 },
+    { id: 49, q: "What colour is Valt Aoi's hair in Beyblade Burst?",                            opts: ["Blue", "Red", "Yellow", "White"], a: 0 },
+    { id: 50, q: "In the original anime, who is the cold rival captain that battles Tyson at the end?", opts: ["Brooklyn", "Ray", "Kai Hiwatari", "Max"], a: 2 }
+  ]
+};
+
+const ROUND_SECONDS = 120;
+const QUESTIONS_PER_ROUND = 8;
+const LB_KEY = "quiz_master_leaderboard_v3";
+
+let state = {
+  quiz: null,
+  questions: [],
+  usedIds: [],
+  current: 0,
+  score: 0,
+  remaining: ROUND_SECONDS,
+  timerId: null,
+  locked: false,
+  alreadySaved: false
+};
+
+function show(id) {
+  document.querySelectorAll('#home, #quizScreen, #resultsScreen').forEach(el => el.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+}
+
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/* Pick N unique questions by id, with a safety check */
+function pickUniqueQuestions(quizName, count) {
+  const bank = QUESTIONS[quizName];
+  const chosen = shuffle(bank).slice(0, count);
+  const seen = new Set();
+  for (const q of chosen) {
+    if (seen.has(q.id)) {
+      console.error("Duplicate detected, reshuffling");
+      return pickUniqueQuestions(quizName, count);
+    }
+    seen.add(q.id);
+  }
+  return chosen;
+}
+
+function startQuiz(quizName) {
+  state.quiz = quizName;
+  state.questions = pickUniqueQuestions(quizName, QUESTIONS_PER_ROUND);
+  state.usedIds = state.questions.map(q => q.id);
+  state.current = 0;
+  state.score = 0;
+  state.remaining = ROUND_SECONDS;
+  state.locked = false;
+  state.alreadySaved = false;
+  show('quizScreen');
+  renderQuestion();
+  startTimer();
+}
+
+function startTimer() {
+  updateTimerDisplay();
+  if (state.timerId) clearInterval(state.timerId);
+  state.timerId = setInterval(() => {
+    state.remaining--;
+    updateTimerDisplay();
+    if (state.remaining <= 0) {
+      clearInterval(state.timerId);
+      endQuiz(true);
+    }
+  }, 1000);
+}
+
+function updateTimerDisplay() {
+  const t = document.getElementById('timer');
+  const m = Math.floor(state.remaining / 60);
+  const s = state.remaining % 60;
+  t.textContent = `${m}:${String(s).padStart(2,'0')}`;
+  t.classList.toggle('warn', state.remaining <= 30 && state.remaining > 10);
+  t.classList.toggle('danger', state.remaining <= 10);
+}
+
+function renderQuestion() {
+  const q = state.questions[state.current];
+  document.getElementById('qCounter').textContent = `Question ${state.current+1} of ${QUESTIONS_PER_ROUND}`;
+  document.getElementById('qId').textContent = `Bank #${String(q.id).padStart(2,'0')}`;
+  document.getElementById('questionText').textContent = q.q;
+  const pct = (state.current / QUESTIONS_PER_ROUND) * 100;
+  document.getElementById('progressBar').style.width = pct + '%';
+
+  document.getElementById('roundIds').innerHTML =
+    "Round IDs: " + state.usedIds.map(id => `<span>#${String(id).padStart(2,'0')}</span>`).join('  ');
+
+  const indices = shuffle([0,1,2,3]);
+  const box = document.getElementById('optionsBox');
+  box.innerHTML = '';
+  const letters = ['A','B','C','D'];
+  indices.forEach((origIdx, displayIdx) => {
+    const btn = document.createElement('button');
+    btn.className = 'opt';
+    btn.innerHTML = `<span class="letter">${letters[displayIdx]}</span><span>${q.opts[origIdx]}</span>`;
+    btn.onclick = () => answer(btn, origIdx === q.a);
+    box.appendChild(btn);
+  });
+  state.locked = false;
+}
+
+function answer(btn, correct) {
+  if (state.locked) return;
+  state.locked = true;
+  const q = state.questions[state.current];
+  const opts = document.querySelectorAll('.opt');
+  opts.forEach(o => o.classList.add('locked'));
+  if (correct) {
+    state.score++;
+    btn.classList.add('correct');
+  } else {
+    btn.classList.add('wrong');
+    opts.forEach(o => {
+      const txt = o.querySelector('span:last-child').textContent;
+      if (txt === q.opts[q.a]) o.classList.add('correct');
+    });
+  }
+  setTimeout(() => {
+    state.current++;
+    if (state.current >= QUESTIONS_PER_ROUND) {
+      endQuiz(false);
+    } else {
+      renderQuestion();
+    }
+  }, 900);
+}
+
+function endQuiz(timeUp) {
+  if (state.timerId) clearInterval(state.timerId);
+  document.getElementById('finalScoreNum').textContent = state.score;
+  const labelMap = {
+    ninjago:  'Ninjago round complete',
+    marvel:   'Marvel round complete',
+    mario:    'Mario round complete',
+    sonic:    'Sonic round complete',
+    beyblade: 'Beyblade round complete'
+  };
+  document.getElementById('resultsTitle').textContent =
+    timeUp ? 'Time up' : (labelMap[state.quiz] || 'Round complete');
+
+  let msg;
+  if (state.score === 8)      msg = "Perfect score. Absolute legend.";
+  else if (state.score >= 6)  msg = "Great run — true fan.";
+  else if (state.score >= 4)  msg = "Solid effort. One more go?";
+  else                        msg = "Tough one. Train more and try again.";
+  document.getElementById('finalMsg').textContent = msg;
+  document.getElementById('resultIds').innerHTML =
+    "Questions seen: " + state.usedIds.map(id => `<span>#${String(id).padStart(2,'0')}</span>`).join('  ');
+  document.getElementById('namePrompt').classList.remove('hidden');
+  document.getElementById('playerName').value = '';
+  show('resultsScreen');
+}
+
+function quitToHome() {
+  if (!confirm("Quit this round? Your score won't be saved.")) return;
+  if (state.timerId) clearInterval(state.timerId);
+  goHome();
+}
+function playAgain() { startQuiz(state.quiz); }
+function goHome() {
+  if (state.timerId) clearInterval(state.timerId);
+  renderLeaderboard();
+  show('home');
+}
+
+/* Leaderboard */
+function emptyLb(){ return { ninjago: [], marvel: [], mario: [], sonic: [], beyblade: [] }; }
+function loadLb() {
+  try {
+    const v = JSON.parse(localStorage.getItem(LB_KEY)) || emptyLb();
+    return { ...emptyLb(), ...v };
+  } catch { return emptyLb(); }
+}
+function saveLb(lb) { localStorage.setItem(LB_KEY, JSON.stringify(lb)); }
+function saveScore() {
+  if (state.alreadySaved) return;
+  const nameEl = document.getElementById('playerName');
+  const name = (nameEl.value || '').trim().slice(0, 18) || 'Anonymous';
+  const lb = loadLb();
+  const entry = {
+    name: name,
+    score: state.score,
+    timeLeft: state.remaining,
+    when: new Date().toISOString()
+  };
+  lb[state.quiz].push(entry);
+  lb[state.quiz].sort((a,b) => b.score - a.score || b.timeLeft - a.timeLeft);
+  lb[state.quiz] = lb[state.quiz].slice(0, 10);
+  saveLb(lb);
+  state.alreadySaved = true;
+  document.getElementById('namePrompt').classList.add('hidden');
+  goHome();
+  switchLb(state.quiz);
+}
+let lbView = 'ninjago';
+function switchLb(which) {
+  lbView = which;
+  document.querySelectorAll('.lb-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.lb === which);
+  });
+  renderLeaderboard();
+}
+function renderLeaderboard() {
+  const lb = loadLb();
+  const rows = lb[lbView] || [];
+  const tbody = document.getElementById('lbBody');
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td class="empty" colspan="4">No scores yet — be first on the board.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.map((r, i) => {
+    const m = Math.floor(r.timeLeft / 60);
+    const s = r.timeLeft % 60;
+    return `<tr>
+      <td class="rank">${i+1}</td>
+      <td>${escapeHtml(r.name)}</td>
+      <td>${r.score} / 8</td>
+      <td>${m}:${String(s).padStart(2,'0')}</td>
+    </tr>`;
+  }).join('');
+}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));}
+
+renderLeaderboard();
+</script>
+</body>
+</html>
